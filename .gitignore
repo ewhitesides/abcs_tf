@@ -1,0 +1,19 @@
+#ignore things that begin with a dot, except
+.*
+!.gitignore
+!.devcontainer
+!.vscode
+
+#ignore json files, except devcontainer.json
+*.json
+!devcontainer.json
+
+#ignore pycache
+__pycache__/
+
+#ignore devcontainer.env
+devcontainer.env
+
+#ignore tfstate files
+*.tfstate
+*.tfstate.backup
