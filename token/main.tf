@@ -82,26 +82,26 @@ resource "aws_ecr_repository" "abcs_token" {
 #ecr repo policy
 #allow all for the ecr user
 #restrictions set via the role policy the ecr user assumes
-# data "aws_iam_policy_document" "ecr_policy" {
-#   statement {
-#     sid = "ECRRepositoryPolicy"
-#     effect = "Allow"
-#     actions = [
-#       "ecr:*"
-#     ]
-#     principals {
-#       type        = "AWS"
-#       identifiers = [aws_iam_user.ecr_user.arn]
-#     }
-#   }
-#   version = "2012-10-17"
-# }
+data "aws_iam_policy_document" "ecr_policy" {
+  statement {
+    sid = "ECRRepositoryPolicy"
+    effect = "Allow"
+    actions = [
+      "ecr:*"
+    ]
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_user.ecr_user.arn]
+    }
+  }
+  version = "2012-10-17"
+}
 
-# #attach the policy to the ecr repo
-# resource "aws_ecr_repository_policy" "ecr_policy" {
-#   repository = aws_ecr_repository.abcs_token.name
-#   policy     = data.aws_iam_policy_document.ecr_policy.json
-# }
+#attach the policy to the ecr repo
+resource "aws_ecr_repository_policy" "ecr_policy" {
+  repository = aws_ecr_repository.abcs_token.name
+  policy     = data.aws_iam_policy_document.ecr_policy.json
+}
 
 #assume role policy
 #aws iam list-roles
