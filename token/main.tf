@@ -20,20 +20,44 @@ resource "aws_secretsmanager_secret" "prod_abcs_ggloauthtoken" {
   #}
 }
 
-#create ecr repo for token image
-#terraform state show aws_ecr_repository.abcs_token
+#define IAM user for accessing the ecr repo in the github action
+resource "aws_iam_user" "ecr_user" {
+  name = "abcs_token_ecr_user"
+}
+
+#ecr repo
+#to get the url run 'terraform state show aws_ecr_repository.abcs_token'
 resource "aws_ecr_repository" "abcs_token" {
-  name = "abcs_token"
+  name   = "abcs_token"
   image_scanning_configuration {
     scan_on_push = true
   }
 }
 
-#todo create credential for github actions to push to ecr
-# resource "aws_iam_user" "abcs_ecr_push" {
-# name = "abcs_ecr_push"
-# path = "/abcs/"
-# }
+#define policy which allows the ecr_user to access the repo
+data "aws_iam_policy_document" "ecr_policy" {
+  statement {
+    sid    = "AllowPushPull"
+    effect = "Allow"
+    principals {
+      type = "AWS"
+      identifiers = [
+        aws_iam_user.ecr_user.arn
+      ]
+    }
+    actions = [
+      "ecr:*"
+    ]
+  }
+}
+
+#use aws_ecr_repository_policy resource to connect the policy to the repo
+#then run to create access key for user and plug into github as secret
+#aws iam create-access-key --user-name abcs_token_ecr_user
+resource "aws_ecr_repository_policy" "ecr_policy" {
+  repository = aws_ecr_repository.abcs_token.name
+  policy     = data.aws_iam_policy_document.ecr_policy.json
+}
 
 #assume role policy
 #aws iam list-roles
