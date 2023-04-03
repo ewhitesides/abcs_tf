@@ -21,43 +21,87 @@ resource "aws_secretsmanager_secret" "prod_abcs_ggloauthtoken" {
 }
 
 #define IAM user for accessing the ecr repo in the github action
+#attach the policy to the user that allows them to assume the role
 resource "aws_iam_user" "ecr_user" {
   name = "abcs_token_ecr_user"
 }
+data "aws_iam_policy_document" "ecr_user_policy" {
+  statement {
+    sid = "AllowAssumeRole"
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole"
+    ]
+    resources = [
+      aws_iam_role.abcs_token_ecr_role.arn
+    ]
+  }
+  version = "2012-10-17"
+}
+resource "aws_iam_user_policy" "ecr_user_policy" {
+  name = "abcs_token_ecr_user_policy"
+  user = aws_iam_user.ecr_user.name
+  policy = data.aws_iam_policy_document.ecr_user_policy.json
+}
+
+#create the role
+data "aws_iam_policy_document" "abcs_token_ecr_role_assume_policy" {
+  statement {
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+    effect  = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_user.ecr_user.arn]
+    }
+  }
+  version = "2012-10-17"
+}
+data "aws_iam_policy" "AmazonEC2ContainerRegistryFullAccess" {
+  arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+}
+resource "aws_iam_role" "abcs_token_ecr_role" {
+  name = "abcs_token_ecr_role"
+  assume_role_policy = data.aws_iam_policy_document.abcs_token_ecr_role_assume_policy.json
+  managed_policy_arns = [
+    data.aws_iam_policy.AmazonEC2ContainerRegistryFullAccess.arn
+  ]
+  max_session_duration = 7200
+}
 
 #ecr repo
-#to get the url run 'terraform state show aws_ecr_repository.abcs_token'
 resource "aws_ecr_repository" "abcs_token" {
-  name   = "abcs_token"
+  name = "abcs_token"
   image_scanning_configuration {
     scan_on_push = true
   }
 }
 
-#define policy which allows the ecr_user to access the repo
-data "aws_iam_policy_document" "ecr_policy" {
-  statement {
-    sid    = "AllowPushPull"
-    effect = "Allow"
-    principals {
-      type = "AWS"
-      identifiers = [
-        aws_iam_user.ecr_user.arn
-      ]
-    }
-    actions = [
-      "ecr:*"
-    ]
-  }
-}
+#ecr repo policy
+#allow all for the ecr user
+#restrictions set via the role policy the ecr user assumes
+# data "aws_iam_policy_document" "ecr_policy" {
+#   statement {
+#     sid = "ECRRepositoryPolicy"
+#     effect = "Allow"
+#     actions = [
+#       "ecr:*"
+#     ]
+#     principals {
+#       type        = "AWS"
+#       identifiers = [aws_iam_user.ecr_user.arn]
+#     }
+#   }
+#   version = "2012-10-17"
+# }
 
-#use aws_ecr_repository_policy resource to connect the policy to the repo
-#then run to create access key for user and plug into github as secret
-#aws iam create-access-key --user-name abcs_token_ecr_user
-resource "aws_ecr_repository_policy" "ecr_policy" {
-  repository = aws_ecr_repository.abcs_token.name
-  policy     = data.aws_iam_policy_document.ecr_policy.json
-}
+# #attach the policy to the ecr repo
+# resource "aws_ecr_repository_policy" "ecr_policy" {
+#   repository = aws_ecr_repository.abcs_token.name
+#   policy     = data.aws_iam_policy_document.ecr_policy.json
+# }
 
 #assume role policy
 #aws iam list-roles
