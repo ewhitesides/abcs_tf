@@ -27,7 +27,7 @@ resource "aws_iam_user" "ecr_user" {
 }
 data "aws_iam_policy_document" "ecr_user_policy" {
   statement {
-    sid = "AllowAssumeRole"
+    sid    = "AllowAssumeRole"
     effect = "Allow"
     actions = [
       "sts:AssumeRole"
@@ -39,8 +39,8 @@ data "aws_iam_policy_document" "ecr_user_policy" {
   version = "2012-10-17"
 }
 resource "aws_iam_user_policy" "ecr_user_policy" {
-  name = "abcs_token_ecr_user_policy"
-  user = aws_iam_user.ecr_user.name
+  name   = "abcs_token_ecr_user_policy"
+  user   = aws_iam_user.ecr_user.name
   policy = data.aws_iam_policy_document.ecr_user_policy.json
 }
 
@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "abcs_token_ecr_role_assume_policy" {
       "sts:AssumeRole",
       "sts:TagSession"
     ]
-    effect  = "Allow"
+    effect = "Allow"
     principals {
       type        = "AWS"
       identifiers = [aws_iam_user.ecr_user.arn]
@@ -63,7 +63,7 @@ data "aws_iam_policy" "AmazonEC2ContainerRegistryFullAccess" {
   arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
 }
 resource "aws_iam_role" "abcs_token_ecr_role" {
-  name = "abcs_token_ecr_role"
+  name               = "abcs_token_ecr_role"
   assume_role_policy = data.aws_iam_policy_document.abcs_token_ecr_role_assume_policy.json
   managed_policy_arns = [
     data.aws_iam_policy.AmazonEC2ContainerRegistryFullAccess.arn
@@ -84,7 +84,7 @@ resource "aws_ecr_repository" "abcs_token" {
 #restrictions set via the role policy the ecr user assumes
 data "aws_iam_policy_document" "ecr_policy" {
   statement {
-    sid = "ECRRepositoryPolicy"
+    sid    = "ECRRepositoryPolicy"
     effect = "Allow"
     actions = [
       "ecr:*"

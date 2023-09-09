@@ -3,7 +3,10 @@ terraform {
   required_version = ">= 1.4.1"
 
   required_providers {
-    aws = ">= 4.58.0"
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 4.58.0"
+    }
   }
 
   #abcs-tf bucket should exist already
@@ -17,5 +20,4 @@ terraform {
     key    = "token_refresh/terraform.tfstate"
     region = "us-east-2"
   }
-
 }
